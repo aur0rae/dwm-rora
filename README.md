@@ -55,4 +55,4 @@ Window management:
 
 ## Screenshots
 *DWM running on my Netbook with Void Linux*
-<img alt="DWM on Void" src="https://github.com/aur0rae/RoWM/blob/main/res/screenshot.png">
+<img alt="DWM on Void" src="https://github.com/aur0rae/dwm-rora/blob/main/res/screenshot.png">
