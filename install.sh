@@ -28,14 +28,8 @@ echo "
 # ============================================================= #
 "
 
-
-
-# ============================================================= #
-#
 # Check if this is running with root permissions - it should
 # not be
-#
-# ============================================================= #
 if [ "$EUID" = 0 ]; then
 	echo "Running this script as root may break things. Please run without superuser permissions."
 	sleep 10
@@ -45,40 +39,15 @@ else
 	TEMP_DIR=$(pwd)
 fi
 
-
-
-# ============================================================= #
-#
-#     Functions
-#
-# ============================================================= #
-
+# Setup functions to make sure we have all deps met
 deb_install() {
 	# Refresh mirrors and update system
 	sudo apt update
 	sudo apt dist-upgrade
 
 	# Install deps
-	sudo apt install -y xorg build-essential libxft-dev libxinerama-dev wget git \
-			alsa-utils pipewire pipewire-pulse wireplumber network-manager \
-			feh alacritty scrot thunar thunar-volman gvfs bat eza fzf \
-			zoxide vlc network-manager-gnome brightnessctl picom
-
-	# Install Flatpak
-	if [ $INSTFLTPK = 'Y' ]; then
-		sudo apt install -y flatpak
-	fi
-
-	# Prompt user to install Nala
-	confirm "install Nala and configure mirrors" nala_config "echo Skipping."
-}
-
-nala_config() {
-	# Install Nala
-	sudo apt install nala
-
-	# Select mirrors
-	sudo nala fetch
+	sudo apt install -y build-essential xorg libxft-dev libxinerama-dev xterm \
+			pulseaudio feh bat eza fzf zoxide scrot
 }
 
 arch_install() {
@@ -86,36 +55,20 @@ arch_install() {
 	sudo pacman -Syu
 
 	# Install deps
-	sudo pacman -S --noconfirm xorg libx11 libxft libxinerama base-devel wget git \
-			alsa-utils pipewire pipewire-pulse wireplumber thunar \
-			thunar-volman gvfs networkmanager nm-applet alacritty feh \
-			bat eza fzf zoxide vlc brightnessctl picom scrot
-
-	# Install Flatpak
-	if [ $INSTFLTPK = 'Y' ]; then
-		sudo pacman -S --noconfirm flatpak
-	fi
-
-	# Prompt user to install Paru
-	confirm "install Paru to manage AUR packages" paru_config "echo Skipping."
+	sudo pacman -S --noconfirm base-devel xorg libx11 libxft libxinerama xterm \
+			pulseaudio feh bat eza fzf zoxide scrot
 }
 
-paru_config() {
-	# Install Paru
-	git clone https://aur.archlinux.org/paru.git
-	cd $TEMPDIR/paru
-	makepkg -si
+void_install() {
+	# Update system
+	sudo xbps-install -Syu
 
-	# Clean up after
-	cd $TEMPDIR
-	rm -rf $TEMPDIR/paru
+	# Install deps
+	sudo xbps-install -y base-devel xorg libX11-devel libXft-devel libXinerama-devel \
+			xterm feh bat eza fzf zoxide scrot
 }
 
-optional_install() {
-	# TODO: implement packages to install
-	echo "Sorry, this function is not yet complete. Skipping."
-}
-
+# Function for user prompts
 confirm() {
 	while true; do
 	        read -p "> Would you like to $1? (Y)es/(N)o: " var
@@ -135,32 +88,23 @@ confirm() {
 	done
 }
 
-configx() {
-	echo "if [[ -z \$DISPLAY ]] && [[ \$(tty) = /dev/tty1 ]]; then\n\tstartx\nfi" > $HOME/.bash_profile
-}
-
-
-
-# ============================================================= #
-#
-#     Main script
-#
-# ============================================================= #
-
-# Determine distribution and ask about Flatpak
+# Determine distribution
 echo "Determining distribution and package manager."
-confirm "install Flatpak for additional distro-agnostic package management?" "export INSTFLTPK=Y" "export INSTFLTPK=N"
 
 if [ -f "/etc/os-release" ]; then
 	. /etc/os-release
 	case "$ID" in
 		debian|*ubuntu*)
-			echo "$ID detected. Using apt to update, install dependancies, and configure Nala...\n"
+			echo "$ID detected. Using apt to update and install dependencies...\n"
 			deb_install
 			;;
 		arch*|endeavour|manjaro|artix|cachyos)
-			echo "$ID detected. Using pacman to update and install dependancies...\n"
+			echo "$ID detected. Using pacman to update and install dependencies...\n"
 			arch_install
+			;;
+		void)
+			echo "$ID detected. Using xbps to update and install dependencies...\n"
+			void_install
 			;;
 		*)
 			# Catch exceptions for distros like Fedora, OpenSuSE, etc.
@@ -173,14 +117,6 @@ else
 	echo "Error: /etc/os-release not found. Are you on Linux?\n"
 	confirm "continue" "break" "exit 1"
 fi
-
-# If flatpak was installed, configure Flathub
-if [ $INSTFLTPK = 'Y' ]; then
-	flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-	echo "Flatpak configured.\n"
-fi
-
-
 
 # Install DWM, Dmenu, and SLStatus
 echo "Compiling DWM and other suckless software..."
@@ -197,45 +133,24 @@ for suckless in dwm dmenu slstatus; do
 done
 echo "Finished Suckless Software installation!\n"
 
-
-
 # Return to expected working directory
 cd $TEMP_DIR
 
-# Configure Xorg
-echo "Configuring Xorg to launch DWM..."
-
-if [ ! -f "$HOME/.xinitrc" ]; then
-	echo '#!/bin/sh\nexec dwm' > ~/.xinitrc;
-else
-	echo "~/.xinitrc already exists, skipping.";
-fi
-
-# Prompt user to configure autostarting DWM
-confirm "start DWM at BASH login" configx "echo Skipping."
-echo "Xorg config done!\n"
-
-
-
 # Configure shell and graphical stuffs
-echo "Configuring environment..."
+echo "Configuring environment and Xorg..."
+
+# Autostart DWM at login
+echo "if [[ -z \$DISPLAY ]] && [[ \$(tty) = /dev/tty1 ]]; then\n\tstartx\nfi" > $HOME/.bash_profile
+echo '#!/bin/sh\nexec dwm' > ~/.xinitrc;
 
 # Make sure background is set
-cp $TEMP_DIR/res/bg.png $HOME/.bg.png
-echo "#!/bin/sh\nfeh --no-fehbg --bg-fill '$HOME/.bg.png'" > .fehbg
+cp $TEMP_DIR/res/bg.jpg $HOME/.bg.jpg
+echo "#!/bin/sh\nfeh --no-fehbg --bg-fill '$HOME/.bg.jpg'" > .fehbg
 
-# Configure kitty to use correct theming and transparency
-mkdir -p $HOME/.config
-cp $TEMP_DIR/src/alacritty.toml $HOME/.config/alacritty.toml
+# XTerm dark theme
+echo "XTerm*Background: black\nXTerm*foreground: white" > $HOME/.bash_profile
 
 echo "Environment configured!\n"
-
-
-
-# Prompt user to install additional common quality of life software
-confirm "install additional software with Flatpak" optional_install "echo Skipping."
-
-
 
 # Notify user when script is done
 echo "Installation completed successfully.\n\nRun 'startx' to launch DWM."

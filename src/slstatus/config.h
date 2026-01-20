@@ -66,7 +66,8 @@ static const char unknown_str[] = "n/a";
  */
 static const struct arg args[] = {
 	/* function     format          argument */
-        { run_command,  "%s ",          "amixer sget Master | tail -1 | awk '{ print $4 }'" },
-	{ datetime,     "[%s] ",        "%F %T" },
-        { battery_perc, "[%s%%]",       "BAT0" },
+	{ run_command,	"vol:%s ",	"pactl get-sink-volume @DEFAULT_SINK@ | awk '{ print $5 }'" },
+        { battery_perc, "bat:%s%% ",    "BAT1" },
+	{ datetime,     "%s ",          "%F" },
+	{ run_command,	"%s",		"echo 'dwm-6.7'" },
 };
