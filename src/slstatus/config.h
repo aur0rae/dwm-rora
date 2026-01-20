@@ -68,6 +68,6 @@ static const struct arg args[] = {
 	/* function     format          argument */
 	{ run_command,	"vol:%s ",	"pactl get-sink-volume @DEFAULT_SINK@ | awk '{ print $5 }'" },
         { battery_perc, "bat:%s%% ",    "BAT1" },
-	{ datetime,     "%s ",          "%F" },
+	{ datetime,     "%s ",          "%F %T" },
 	{ run_command,	"%s",		"echo 'dwm-6.7'" },
 };
