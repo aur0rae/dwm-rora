@@ -140,7 +140,7 @@ cd $TEMP_DIR
 echo "Configuring environment and Xorg..."
 
 # Autostart DWM at login
-echo "if [[ -z \$DISPLAY ]] && [[ \$(tty) = /dev/tty1 ]]; then\n\tstartx\nfi" > $HOME/.bash_profile
+# echo "if [[ -z \$DISPLAY ]] && [[ \$(tty) = /dev/tty1 ]]; then\n\tstartx\nfi" > $HOME/.bash_profile
 echo '#!/bin/sh\nexec dwm' > ~/.xinitrc;
 
 # Make sure background is set
@@ -148,7 +148,7 @@ cp $TEMP_DIR/res/bg.jpg $HOME/.bg.jpg
 echo "#!/bin/sh\nfeh --no-fehbg --bg-fill '$HOME/.bg.jpg'" > .fehbg
 
 # XTerm dark theme
-echo "XTerm*Background: black\nXTerm*foreground: white" > $HOME/.bash_profile
+echo "XTerm*Background: black\nXTerm*foreground: white" > $HOME/.Xdefaults
 
 echo "Environment configured!\n"
 
